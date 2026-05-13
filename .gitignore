@@ -1,0 +1,11 @@
+/bin/
+/target/
+**/*.go.bk
+*.pem
+.env
+!config/config.yaml
+config/keys/
+node_modules/
+.next/
+*.log
+/tmp/

@@ -1,0 +1,93 @@
+package main
+
+import (
+	"os"
+
+	"github.com/rs/zerolog/log"
+	"github.com/moistello/backend/config"
+	"github.com/moistello/backend/internal/api"
+	"github.com/moistello/backend/internal/api/handler"
+	"github.com/moistello/backend/internal/domain/audit"
+	"github.com/moistello/backend/internal/domain/auth"
+	"github.com/moistello/backend/internal/domain/circle"
+	"github.com/moistello/backend/internal/domain/contribution"
+	"github.com/moistello/backend/internal/domain/invite"
+	"github.com/moistello/backend/internal/domain/notification"
+	"github.com/moistello/backend/internal/domain/payout"
+	"github.com/moistello/backend/internal/domain/reputation"
+	"github.com/moistello/backend/internal/domain/user"
+	"github.com/moistello/backend/pkg/logger"
+	"github.com/moistello/backend/pkg/postgres"
+	"github.com/moistello/backend/pkg/redis"
+	"github.com/moistello/backend/pkg/validator"
+)
+
+func main() {
+	cfg, err := config.Load(".")
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to load config")
+	}
+
+	logger.Init(cfg.Logging.Level, cfg.Logging.Format)
+	validator.Init()
+	log.Info().Msg("starting Moistello API server")
+
+	db, err := postgres.New(cfg.Database)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to connect to database")
+	}
+	defer db.Close()
+
+	redisClient, err := redis.New(cfg.Redis)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to connect to redis")
+	}
+	defer redisClient.Close()
+
+	userRepo := user.NewRepository(db)
+	circleRepo := circle.NewRepository(db)
+	contribRepo := contribution.NewRepository(db)
+	payoutRepo := payout.NewRepository(db)
+	reputationRepo := reputation.NewRepository(db)
+	notificationRepo := notification.NewRepository(db)
+	inviteRepo := invite.NewRepository(db)
+	auditRepo := audit.NewRepository(db)
+
+	userSvc := user.NewService(userRepo)
+	circleSvc := circle.NewService(circleRepo, circle.NewTransactor(db))
+	contribSvc := contribution.NewService(contribRepo, contribution.NewTransactor(db))
+	payoutSvc := payout.NewService(payoutRepo)
+	reputationSvc := reputation.NewService(reputationRepo)
+	notificationSvc := notification.NewService(notificationRepo, nil)
+	authSvc, err := auth.NewService(redisClient, cfg.Auth.NonceTTL, cfg.Auth.AccessTokenTTL, cfg.Auth.RefreshTokenTTL, cfg.Auth.JWTPrivateKeyPath, cfg.Auth.JWTPublicKeyPath)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize auth service")
+	}
+	inviteSvc := invite.NewService(inviteRepo)
+	_ = reputationSvc
+	_ = contribSvc
+	_ = payoutSvc
+	_ = auditRepo
+
+	jwtSecret, err := os.ReadFile(cfg.Auth.JWTPrivateKeyPath)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to load JWT secret")
+	}
+
+	authH := handler.NewAuthHandler(authSvc, userSvc)
+	userH := handler.NewUserHandler(userSvc)
+	circleH := handler.NewCircleHandler(circleSvc, inviteSvc)
+	contribH := handler.NewContributionHandler(contribSvc, contribRepo)
+	payoutH := handler.NewPayoutHandler(payoutSvc, payoutRepo)
+	inviteH := handler.NewInviteHandler(inviteSvc)
+	notifH := handler.NewNotificationHandler(notificationSvc)
+	adminH := handler.NewAdminHandler(userSvc, userRepo, circleSvc, auditRepo)
+	webhookH := handler.NewWebhookHandler()
+	healthH := handler.NewHealthHandler(db.DB, redisClient)
+
+	router := api.NewRouter(cfg, redisClient, authH, userH, circleH, contribH, payoutH, inviteH, notifH, adminH, webhookH, healthH, jwtSecret)
+
+	if err := api.RunServer(router, cfg.Server); err != nil {
+		log.Fatal().Err(err).Msg("server error")
+	}
+}

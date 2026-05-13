@@ -1,0 +1,102 @@
+environment: development
+
+server:
+  port: 1100
+  host: "0.0.0.0"
+  readTimeout: "10s"
+  writeTimeout: "30s"
+  maxHeaderBytes: 1048576
+
+database:
+  url: "postgres://moistello:moistello_dev@localhost:5432/moistello?sslmode=disable"
+  maxOpenConns: 50
+  maxIdleConns: 10
+  connMaxLifetime: "30m"
+  migrationPath: ""
+
+redis:
+  url: "redis://localhost:6379"
+  password: ""
+  db: 0
+  poolSize: 20
+
+rabbitmq:
+  url: "amqp://guest:guest@localhost:5672/"
+  exchange: "moistello.events"
+  queues:
+    notifications: "moistello.notifications"
+    webhooks: "moistello.webhooks"
+
+stellar:
+  network: "testnet"
+  horizonUrl: "https://horizon-testnet.stellar.org"
+  sorobanRpcUrl: "https://soroban-testnet.stellar.org"
+  networkPassphrase: "Test SDF Network ; September 2015"
+  # ── SECURITY WARNING ──
+  # NEVER store a mainnet secret key (S...) in this file.
+  # For production, set via environment variable:
+  #   export MOISTELLO_STELLAR_MASTER_SECRET_KEY="S..."
+  # For development/testing only, it's acceptable in config.
+  masterPublicKey: "GAX23V3WWDPPR5WRER3KTEUTDLSCGZYMSJY5FDRRKKCIQ4JADF5T27RC"
+  masterSecretKey: "SDDBM2MKQSV2ZPEDKTSI3IWNEUSJU5DAWW5NSRWNKJ4FABXSYGYW72FO"
+
+auth:
+  jwtPrivateKeyPath: "./config/keys/jwt-private.pem"
+  jwtPublicKeyPath: "./config/keys/jwt-public.pem"
+  accessTokenTTL: "15m"
+  refreshTokenTTL: "168h"
+  nonceTTL: "5m"
+
+indexer:
+  pollInterval: "3s"
+  batchSize: 50
+  startLedger: 0
+
+notification:
+  email:
+    provider: ""
+    apiKey: ""
+    fromAddress: ""
+  sms:
+    provider: ""
+    accountSid: ""
+    authToken: ""
+    fromNumber: ""
+  push:
+    fcmServerKey: ""
+
+cors:
+  allowedOrigins:
+    - "http://localhost:1110"
+  allowedMethods:
+    - "GET"
+    - "POST"
+    - "PATCH"
+    - "DELETE"
+    - "OPTIONS"
+  allowedHeaders:
+    - "Authorization"
+    - "Content-Type"
+    - "X-Request-ID"
+  allowCredentials: true
+  maxAge: "24h"
+
+rateLimit:
+  global: 100
+  authenticated: 300
+  auth: 10
+
+logging:
+  level: "debug"
+  format: "json"
+  output: "stdout"
+
+# Override for local dev
+
+# Deployed Contract IDs (Testnet)
+contracts:
+  circle_factory: "CADZWDGER6PYEWVHZDZ5HMEV6A5TKFVD4EY4DSPUTEKAM2KDPEABGJQU"
+  circle: "CALNXOUPT267LRRUCIF6OICEVGVEVKH2D2SX3YURCB4JXLDOF5TXVPCN"
+  reputation_registry: "CCEEJKQCYO7CXBFZBSGHS6AK2CCBU2HY2HK4VXQDPZ3XX3X3KEDGXQ7K"
+  governance_token: "CDOBQSJZJD4RIE2V5Q2IOJ6PBPSE2FT46BCD5WXW64ZN4KEUMYGBX3CS"
+  treasury: "CASXVLHWI56BBKLZHDHCFMCXDWJ4XWEMZABVBUIQBPDHVK4UW6ICUSFI"
