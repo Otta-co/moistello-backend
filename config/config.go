@@ -129,7 +129,7 @@ func Load(path string) (*Config, error) {
 	v.SetDefault("server.readTimeout", "10s")
 	v.SetDefault("server.writeTimeout", "30s")
 	v.SetDefault("server.maxHeaderBytes", 1048576)
-	v.SetDefault("database.url", "postgres://moistello:moistello_dev@localhost:5432/moistello?sslmode=disable")
+	v.SetDefault("database.url", "postgres://moistello:moistello_dev@localhost:9811/moistello?sslmode=disable")
 	v.SetDefault("database.maxOpenConns", 50)
 	v.SetDefault("database.maxIdleConns", 10)
 	v.SetDefault("database.connMaxLifetime", "30m")
