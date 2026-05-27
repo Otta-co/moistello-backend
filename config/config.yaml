@@ -8,7 +8,6 @@ server:
   maxHeaderBytes: 1048576
 
 database:
-  url: "postgres://moistello:moistello_dev@localhost:5432/moistello?sslmode=disable"
   maxOpenConns: 50
   maxIdleConns: 10
   connMaxLifetime: "30m"
